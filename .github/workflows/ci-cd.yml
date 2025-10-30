@@ -176,7 +176,7 @@ jobs:
           max_attempts=30
           attempt=1
           while [ $attempt -le $max_attempts ]; do
-            if curl -f http://localhost/health-check/ >/dev/null 2>&1; then
+            if curl -f http://localhost:8888/health-check/ >/dev/null 2>&1; then
               echo "服务健康检查通过"
               break
             fi
