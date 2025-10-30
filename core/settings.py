@@ -83,17 +83,17 @@ WSGI_APPLICATION = "core.wsgi.application"
 # https://docs.djangoproject.com/en/5.2/ref/settings/#databases
 
 
-# DATABASES = {
-#      'default': {
-#          'ENGINE': 'django.db.backends.mysql',
-#          'NAME': 'dashboard', # 数据库名
-#          'USER':'dashboard', # 你设置的用户名 - 非root用户
-#          'PASSWORD':'zXBD6nWb5an8LCyK', # # 换成你自己密码
-#          'HOST': '172.19.63.118',
-#          'PORT':'3306', # 端口
-#          'ATOMIC_REQUESTS': True, #事务
-#      }
-# }
+DATABASES = {
+    "default": {
+        "ENGINE": "django.db.backends.mysql",
+        "NAME": "dashboard",  # 数据库名
+        "USER": "dashboard",  # 你设置的用户名 - 非root用户
+        "PASSWORD": "zXBD6nWb5an8LCyK",  # # 换成你自己密码
+        "HOST": "172.19.63.118",
+        "PORT": "3306",  # 端口
+        "ATOMIC_REQUESTS": True,  # 事务
+    }
+}
 
 # DATABASES = {
 #      'default': {
@@ -220,9 +220,9 @@ if is_testing():
 
     # 禁用不必要的中间件
     MIDDLEWARE = [middleware for middleware in MIDDLEWARE if "csrf" not in middleware.lower()]
-    # # 在测试环境中禁用缓存
-    # CACHES = {
-    #     'default': {
-    #         'BACKEND': 'django.core.cache.backends.dummy.DummyCache',
-    #     }
-    # }
+    # 在测试环境中禁用缓存
+    CACHES = {
+        "default": {
+            "BACKEND": "django.core.cache.backends.dummy.DummyCache",
+        }
+    }

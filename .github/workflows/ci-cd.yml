@@ -104,28 +104,22 @@ jobs:
         echo "Running isort..."
         isort . --check-only
 
-    # 步骤8：上传测试覆盖率报告（可选）
-    - name: Upload coverage reports
-      uses: codecov/codecov-action@v3
-      with:
-        file: ./coverage.xml
-        flags: unittests
 
-#  # 第二个任务：构建和部署（只有在测试通过且是main分支时才运行）
-#  deploy:
-#    # 任务名称：部署到生产环境
-#    name: Deploy to Production
-#
-#    # 运行环境
-#    runs-on: ubuntu-latest
-#
-#    # 这个任务依赖于test任务，只有test任务成功才会运行
-#    needs: test
-#
-#    # 只有在推送到main分支时才运行部署
-#    if: github.ref == 'refs/heads/main'
-#
-#    steps:
+  # 第二个任务：构建和部署（只有在测试通过且是main分支时才运行）
+  deploy:
+    # 任务名称：部署到生产环境
+    name: Deploy to Production
+
+    # 运行环境
+    runs-on: ubuntu-latest
+
+    # 这个任务依赖于test任务，只有test任务成功才会运行
+    needs: test
+
+    # 只有在推送到main分支时才运行部署
+    if: github.ref == 'refs/heads/main'
+
+    steps:
 #    # 步骤1：检出代码
 #    - name: Checkout code
 #      uses: actions/checkout@v4
@@ -151,41 +145,41 @@ jobs:
 #          ${{ secrets.DOCKERHUB_USERNAME }}/crypto-dashboard:latest
 #          ${{ secrets.DOCKERHUB_USERNAME }}/crypto-dashboard:${{ github.sha }}
 
-#    # 步骤5：部署到服务器（通过SSH）
-#    - name: Deploy to server
-#      uses: appleboy/ssh-action@master
-#      with:
-#        # 从GitHub Secrets中获取服务器信息
-#        host: ${{ secrets.SERVER_HOST }}
-#        username: ${{ secrets.SERVER_USER }}
-#        key: ${{ secrets.SSH_PRIVATE_KEY }}
-#        # 在服务器上执行的命令
-#        script: |
-#          echo "开始部署加密货币仪表板..."
-#
-#          # 进入项目目录
-#          cd /usr/local/crypto-dashboard
-#
+    # 步骤5：部署到服务器（通过SSH）
+    - name: Deploy to server
+      uses: appleboy/ssh-action@master
+      with:
+        # 从GitHub Secrets中获取服务器信息
+        host: ${{ secrets.SERVER_HOST }}
+        username: ${{ secrets.SERVER_USER }}
+        key: ${{ secrets.SSH_PRIVATE_KEY }}
+        # 在服务器上执行的命令
+        script: |
+          echo "开始部署加密货币仪表板..."
+
+          # 进入项目目录
+          cd /usr/local/crypto-dashboard
+
 #          # 拉取最新的Docker镜像
 #          docker pull ${{ secrets.DOCKERHUB_USERNAME }}/crypto-dashboard:latest
-#
-#          # 停止并删除旧容器
-#          docker-compose down
-#
-#          # 启动新容器
-#          docker-compose up -d
-#
-#          echo "部署完成！"    # 步骤5：部署到服务器（通过SSH）
 
-## 在工作流末尾添加通知
-#- name: Notify on success
-#  if: success()
-#  uses: actions/github-script@v6
-#  with:
-#    script: |
-#      github.rest.issues.createComment({
-#        issue_number: context.issue.number,
-#        owner: context.repo.owner,
-#        repo: context.repo.repo,
-#        body: '🎉 部署成功！新版本已上线。'
-#      })
+          # 停止并删除旧容器
+          docker-compose down
+
+          # 启动新容器
+          docker-compose up -d
+
+          echo "部署完成！"    # 步骤5：部署到服务器（通过SSH）
+
+# 在工作流末尾添加通知
+- name: Notify on success
+  if: success()
+  uses: actions/github-script@v6
+  with:
+    script: |
+      github.rest.issues.createComment({
+        issue_number: context.issue.number,
+        owner: context.repo.owner,
+        repo: context.repo.repo,
+        body: '🎉 部署成功！新版本已上线。'
+      })
