@@ -27,7 +27,6 @@ jobs:
 
     # 定义服务容器（类似于Docker Compose中的服务）
     services:
-
       # Redis服务
       redis:
         image: redis:7-alpine
@@ -57,25 +56,30 @@ jobs:
         sudo apt-get update
         sudo apt-get install -y libpq-dev python3-dev
 
-    # 步骤4：安装Python依赖
+#    # 步骤4：安装Python依赖
+#    - name: Install Python dependencies
+#      run: |
+#        python -m pip install --upgrade pip
+#        # 安装项目依赖
+#        pip install -r requirements.txt
+#        # 安装测试需要的额外包
+#        pip install coverage pytest pytest-django pytest-cov uwsgi
+
+      # 步骤4：安装Python依赖（带缓存）
     - name: Install Python dependencies
+      uses: actions/cache@v3
+      with:
+        path: ~/.cache/pip
+        key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}
+        restore-keys: |
+          ${{ runner.os }}-pip-
+    - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
-        # 安装项目依赖
         pip install -r requirements.txt
-        # 安装测试需要的额外包
         pip install coverage pytest pytest-django pytest-cov uwsgi
 
-#    # 步骤5：应用数据库迁移
-#    - name: Run database migrations
-#      run: python manage.py migrate
-#      env:
-#        # 设置Django需要的环境变量
-#        DJANGO_SETTINGS_MODULE: core.settings
-#        DEBUG: 'False'
-#        SECRET_KEY: 'dummy-secret-key-for-testing'
-
-    # 步骤6：运行测试并生成覆盖率报告
+    # 步骤5：运行测试并生成覆盖率报告
     - name: Run tests with coverage
       run: |
         # 运行测试并收集覆盖率数据
@@ -89,7 +93,7 @@ jobs:
         DEBUG: 'False'
         SECRET_KEY: 'dummy-secret-key-for-testing'
 
-    # 步骤7：运行代码质量检查
+    # 步骤6：运行代码质量检查
     - name: Code quality checks
       run: |
         # 安装代码质量工具
@@ -103,7 +107,6 @@ jobs:
         # 检查导入排序（isort）
         echo "Running isort..."
         isort . --check-only
-
 
   # 第二个任务：构建和部署（只有在测试通过且是main分支时才运行）
   deploy:
@@ -168,17 +171,36 @@ jobs:
           # 启动新容器
           docker-compose up -d
 
-          echo "部署完成！"    # 步骤5：部署到服务器（通过SSH）
+          # 健康检查
+          echo "进行健康检查..."
+          max_attempts=30
+          attempt=1
+          while [ $attempt -le $max_attempts ]; do
+            if curl -f http://localhost/health-check/ >/dev/null 2>&1; then
+              echo "服务健康检查通过"
+              break
+            fi
+            echo "等待服务启动... ($attempt/$max_attempts)"
+            sleep 10
+            attempt=$((attempt + 1))
+          done
 
-        # 在工作流末尾添加通知
-        - name: Notify on success
-          if: success()
-          uses: actions/github-script@v6
-          with:
-            script: |
-              github.rest.issues.createComment({
-                issue_number: context.issue.number,
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                body: '🎉 部署成功！新版本已上线。'
-              })
+          if [ $attempt -gt $max_attempts ]; then
+            echo "错误：服务健康检查失败"
+            exit 1
+          fi
+
+          echo "部署完成！"
+
+    # 步骤6：部署成功通知（可选）
+    - name: Notify on success
+      if: success()
+      uses: actions/github-script@v6
+      with:
+        script: |
+          github.rest.issues.createComment({
+            issue_number: context.issue.number,
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            body: '🎉 部署成功！新版本已上线。'
+          })
