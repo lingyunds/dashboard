@@ -1,8 +1,11 @@
-import requests
 from typing import Dict, List, Optional
+
+import requests
 from django.db import transaction
+
+from utils.cache_utils import CacheHelper, cached_method
+
 from .models import CryptoCurrency, PriceHistory
-from utils.cache_utils import CacheHelper,cached_method
 
 
 class CryptoDataService:
@@ -10,14 +13,14 @@ class CryptoDataService:
 
     # 映射加密货币符号到 CoinGecko ID
     COIN_MAPPING = {
-        'BTC': 'bitcoin',
-        'ETH': 'ethereum',
-        'BNB': 'binancecoin',
-        'ADA': 'cardano',
-        'XRP': 'ripple',
-        'DOT': 'polkadot',
-        'LTC': 'litecoin',
-        'LINK': 'chainlink',
+        "BTC": "bitcoin",
+        "ETH": "ethereum",
+        "BNB": "binancecoin",
+        "ADA": "cardano",
+        "XRP": "ripple",
+        "DOT": "polkadot",
+        "LTC": "litecoin",
+        "LINK": "chainlink",
         # 你可以添加更多映射
     }
 
@@ -29,16 +32,26 @@ class CryptoDataService:
 
         try:
             # 将符号转换为 CoinGecko ID
-            coin_ids = [CryptoDataService.COIN_MAPPING[symbol] for symbol in symbols if symbol in CryptoDataService.COIN_MAPPING]
+            coin_ids = [
+                CryptoDataService.COIN_MAPPING[symbol]
+                for symbol in symbols
+                if symbol in CryptoDataService.COIN_MAPPING
+            ]
             if not coin_ids:
                 return None
 
             # 将 ID 列表转换为逗号分隔的字符串
-            ids_param = ','.join(coin_ids)
+            ids_param = ",".join(coin_ids)
 
-            params = {'ids': ids_param, 'vs_currencies': 'usd', 'include_market_cap': 'true', 'include_24hr_vol': 'true','x_cg_demo_api_key':'CG-88HeSxFzeErxbX3fXXHscoXm'}
+            params = {
+                "ids": ids_param,
+                "vs_currencies": "usd",
+                "include_market_cap": "true",
+                "include_24hr_vol": "true",
+                "x_cg_demo_api_key": "CG-88HeSxFzeErxbX3fXXHscoXm",
+            }
             response = requests.get(CryptoDataService.API_URL, params=params, timeout=10)
-            response.raise_for_status() # 检查请求是否成功
+            response.raise_for_status()  # 检查请求是否成功
             return response.json()
         except Exception as e:
             # 这里应该使用日志记录错误，而不是print
@@ -61,18 +74,19 @@ class CryptoDataService:
             if not symbol:
                 continue
 
-            crypto, created = CryptoCurrency.objects.get_or_create(symbol=symbol, defaults={'name': coin_id.title()})
+            crypto, created = CryptoCurrency.objects.get_or_create(
+                symbol=symbol, defaults={"name": coin_id.title()}
+            )
             # 创建新的价格记录
             PriceHistory.objects.create(
                 cryptocurrency=crypto,
-                price=data['usd'],
-                market_cap=data.get('usd_market_cap'),
-                volume=data.get('usd_24h_vol')
+                price=data["usd"],
+                market_cap=data.get("usd_market_cap"),
+                volume=data.get("usd_24h_vol"),
             )
 
         # 数据更新后，使相关缓存失效
         CacheHelper.invalidate_pattern("*crypto_dashboard*")
-
 
     # @cached_method方法装饰器示例
     #

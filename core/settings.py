@@ -10,8 +10,12 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/5.2/ref/settings/
 """
 
-from pathlib import Path
 import os
+import sys
+from pathlib import Path
+
+# 如果你想使用 crontab 格式，需要导入：
+from celery.schedules import crontab
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -26,7 +30,7 @@ SECRET_KEY = "django-insecure-)e!mj^8__!^1+%py0pl&5pb1d4ml(zce+d9cz71q_$tfy-98m2
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = False
 
-ALLOWED_HOSTS = ['*']
+ALLOWED_HOSTS = ["*"]
 
 # 允许所有客户端跨域
 CORS_ORIGIN_ALLOW_ALL = True
@@ -41,12 +45,12 @@ INSTALLED_APPS = [
     "django.contrib.messages",
     "django.contrib.staticfiles",
     "data",
-    'corsheaders',
-    'rest_framework',
+    "corsheaders",
+    "rest_framework",
 ]
 
 MIDDLEWARE = [
-    'corsheaders.middleware.CorsMiddleware',
+    "corsheaders.middleware.CorsMiddleware",
     "django.middleware.security.SecurityMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
@@ -75,8 +79,7 @@ TEMPLATES = [
 
 WSGI_APPLICATION = "core.wsgi.application"
 
-
- # Database
+# Database
 # https://docs.djangoproject.com/en/5.2/ref/settings/#databases
 
 
@@ -139,9 +142,9 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/5.2/howto/static-files/
 
 STATIC_URL = "static/"
-STATICFILES_DIRS = [os.path.join(BASE_DIR, 'static')]
+STATICFILES_DIRS = [os.path.join(BASE_DIR, "static")]
 # 指定收集静态文件的路径
-STATIC_ROOT = os.path.join(BASE_DIR, 'static/collection')
+STATIC_ROOT = os.path.join(BASE_DIR, "static/collection")
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
@@ -150,21 +153,20 @@ DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 
 # Celery Configuration
-CELERY_BROKER_URL = os.environ.get('CELERY_BROKER_URL', 'redis://:123456@localhost:6379/0')
-CELERY_RESULT_BACKEND = os.environ.get('CELERY_RESULT_BACKEND', 'redis://:123456@localhost:6379/0')
-CELERY_ACCEPT_CONTENT = ['json']
-CELERY_TASK_SERIALIZER = 'json'
-CELERY_RESULT_SERIALIZER = 'json'
-CELERY_TIMEZONE = 'UTC'  # 或你的时区，如 'Asia/Shanghai'
+CELERY_BROKER_URL = os.environ.get("CELERY_BROKER_URL", "redis://:123456@localhost:6379/0")
+CELERY_RESULT_BACKEND = os.environ.get("CELERY_RESULT_BACKEND", "redis://:123456@localhost:6379/0")
+CELERY_ACCEPT_CONTENT = ["json"]
+CELERY_TASK_SERIALIZER = "json"
+CELERY_RESULT_SERIALIZER = "json"
+CELERY_TIMEZONE = "UTC"  # 或你的时区，如 'Asia/Shanghai'
 
 # Celery Beat 定时任务配置
-# 如果你想使用 crontab 格式，需要导入：
-from celery.schedules import crontab
+
 
 CELERY_BEAT_SCHEDULE = {
-    'update-crypto-prices-every-5-minutes': {
-        'task': 'data.tasks.update_crypto_prices',
-        'schedule': crontab(minute='*/5'),  # 每1分钟执行一次
+    "update-crypto-prices-every-5-minutes": {
+        "task": "data.tasks.update_crypto_prices",
+        "schedule": crontab(minute="*/5"),  # 每1分钟执行一次
         # 如果需要传递参数，可以添加'args'键，例如：
         # 'args': (['BTC', 'ETH'],),
     },
@@ -172,38 +174,28 @@ CELERY_BEAT_SCHEDULE = {
 
 # Redis 缓存配置
 CACHES = {
-    'default': {
-        'BACKEND': 'django_redis.cache.RedisCache',
-        'LOCATION': os.environ.get('REDIS_URL', 'redis://:123456@127.0.0.1:6379/1'),
-        'OPTIONS': {
-            'CLIENT_CLASS': 'django_redis.client.DefaultClient',
-            'CONNECTION_POOL_KWARGS': {
-                'max_connections': 100,
+    "default": {
+        "BACKEND": "django_redis.cache.RedisCache",
+        "LOCATION": os.environ.get("REDIS_URL", "redis://:123456@127.0.0.1:6379/1"),
+        "OPTIONS": {
+            "CLIENT_CLASS": "django_redis.client.DefaultClient",
+            "CONNECTION_POOL_KWARGS": {
+                "max_connections": 100,
             },
         },
-        'KEY_PREFIX': 'crypto_dashboard',
-        'TIMEOUT': 60 * 15,  # 默认缓存超时时间
+        "KEY_PREFIX": "crypto_dashboard",
+        "TIMEOUT": 60 * 15,  # 默认缓存超时时间
     }
 }
 
 # 会话引擎也可以使用 Redis（可选）
-SESSION_ENGINE = 'django.contrib.sessions.backends.cache'
-SESSION_CACHE_ALIAS = 'default'
-
-
-
-
-
-import sys
+SESSION_ENGINE = "django.contrib.sessions.backends.cache"
+SESSION_CACHE_ALIAS = "default"
 
 
 def is_testing():
     """更准确地检测测试环境"""
-    return (
-            'test' in sys.argv
-            or 'pytest' in sys.argv[0]
-            or 'PYTEST_CURRENT_TEST' in os.environ
-    )
+    return "test" in sys.argv or "pytest" in sys.argv[0] or "PYTEST_CURRENT_TEST" in os.environ
 
 
 # 测试环境配置
@@ -211,15 +203,15 @@ if is_testing():
     print("🐛 检测到测试环境，使用 SQLite 内存数据库")
 
     DATABASES = {
-        'default': {
-            'ENGINE': 'django.db.backends.sqlite3',
-            'NAME': ':memory:',
+        "default": {
+            "ENGINE": "django.db.backends.sqlite3",
+            "NAME": ":memory:",
         }
     }
 
     # 加速测试
     PASSWORD_HASHERS = [
-        'django.contrib.auth.hashers.MD5PasswordHasher',
+        "django.contrib.auth.hashers.MD5PasswordHasher",
     ]
 
     # 同步执行 Celery 任务
@@ -227,10 +219,7 @@ if is_testing():
     CELERY_TASK_EAGER_PROPAGATES = True
 
     # 禁用不必要的中间件
-    MIDDLEWARE = [
-        middleware for middleware in MIDDLEWARE
-        if 'csrf' not in middleware.lower()
-    ]
+    MIDDLEWARE = [middleware for middleware in MIDDLEWARE if "csrf" not in middleware.lower()]
     # # 在测试环境中禁用缓存
     # CACHES = {
     #     'default': {

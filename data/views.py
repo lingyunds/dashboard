@@ -1,18 +1,21 @@
-from rest_framework import viewsets
-from .models import CryptoCurrency, PriceHistory
-from .serializers import CryptoCurrencySerializer, PriceHistorySerializer
-from rest_framework.response import Response
+from django.core.cache import cache
 from django.utils.decorators import method_decorator
 from django.views.decorators.cache import cache_page
-from django.core.cache import cache
+from rest_framework import viewsets
+from rest_framework.response import Response
+
 from utils.cache_utils import CacheHelper
+
+from .models import CryptoCurrency, PriceHistory
+from .serializers import CryptoCurrencySerializer, PriceHistorySerializer
 
 
 class CurrencyViewSet(viewsets.ReadOnlyModelViewSet):
     """
     API端点：列出所有加密货币及其最新价格。
     """
-    queryset = CryptoCurrency.objects.all().prefetch_related('price_history')
+
+    queryset = CryptoCurrency.objects.all().prefetch_related("price_history")
     serializer_class = CryptoCurrencySerializer
 
     @method_decorator(cache_page(60 * 5))  # 缓存5分钟
@@ -27,7 +30,9 @@ class PriceHistoryViewSet(viewsets.ReadOnlyModelViewSet):
     def list(self, request, symbol, *args, **kwargs):
         # symbol = self.request.query_params.get('symbol')
 
-        cache_key = CacheHelper.generate_cache_key(f'currency_price_history_{symbol}',request.get_full_path())
+        cache_key = CacheHelper.generate_cache_key(
+            f"currency_price_history_{symbol}", request.get_full_path()
+        )
         cached_data = cache.get(cache_key)
         if cached_data is not None:
             return Response(cached_data)

@@ -14,8 +14,6 @@ on:
 env:
   # Python版本
   PYTHON_VERSION: '3.12'
-  # Celery Broker URL
-  CELERY_BROKER_URL: 'redis://localhost:6379/0'
 
 # 工作流中的任务定义
 jobs:

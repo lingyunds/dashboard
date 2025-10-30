@@ -37,4 +37,20 @@ dev = [
     "flake8 (>=7.3.0,<8.0.0)"
 ]
 
+[tool.black]
+line-length = 100  # 设置每行最大字符数
+include = '\.pyi?$'  # 指定要格式化的文件类型
+exclude = '''
+/(
+  | .git
+  | .venv
+  | build
+  | dist
+)/
+'''  # 排除不需要格式化的目录
 
+[tool.isort]
+profile = "black"  # 确保isort与black的格式兼容
+line_length = 100  # 建议与black的line-length保持一致
+multi_line_output = 3  # 设置多行导入时的输出风格
+include_trailing_comma = true  # 在多行导入的最后一个条目后加逗号
