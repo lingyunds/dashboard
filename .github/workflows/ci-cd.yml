@@ -160,7 +160,7 @@ jobs:
           echo "开始部署加密货币仪表板..."
 
           # 进入项目目录
-          cd /usr/local/crypto-dashboard
+          cd /usr/local/crypto_dashboard
 
           # 拉取最新的Docker镜像
           docker pull ${{ secrets.DOCKERHUB_USERNAME }}/crypto-dashboard:latest
