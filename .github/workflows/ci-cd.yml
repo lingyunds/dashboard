@@ -1,0 +1,236 @@
+# 工作流的名称，会在GitHub Actions页面显示
+name: Django CI/CD Pipeline
+
+# 定义触发条件：什么时候运行这个工作流
+on:
+  # 当代码推送到main或develop分支时触发
+  push:
+    branches: [ main, develop ]
+  # 当有人向main分支创建Pull Request时触发
+  pull_request:
+    branches: [ main ]
+
+# 定义环境变量，可以在整个工作流中使用
+env:
+  # Python版本
+  PYTHON_VERSION: '3.10.18'
+  # 数据库连接字符串
+  DATABASE_URL: 'postgresql://postgres:postgres@localhost:5432/test_db'
+  # Celery Broker URL
+  CELERY_BROKER_URL: 'redis://localhost:6379/0'
+
+# 工作流中的任务定义
+jobs:
+  # 第一个任务：运行测试
+  test:
+    # 任务名称：测试
+    name: Run Tests
+
+    # 运行在最新的Ubuntu系统上
+    runs-on: ubuntu-latest
+
+    # 定义服务容器（类似于Docker Compose中的服务）
+    services:
+      # PostgreSQL数据库服务
+      postgres:
+        # 使用PostgreSQL 13镜像
+        image: postgres:13
+        # 设置环境变量
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: test_db
+        # 健康检查选项
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        # 暴露端口
+        ports:
+          - 5432:5432
+
+      # Redis服务
+      redis:
+        image: redis:7-alpine
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 6379:6379
+
+    # 任务的具体步骤
+    steps:
+    # 步骤1：检出代码（把仓库代码下载到运行环境）
+    - name: Checkout code
+      uses: actions/checkout@v4  # 使用官方checkout动作
+
+    # 步骤2：设置Python环境
+    - name: Set up Python ${{ env.PYTHON_VERSION }}
+      uses: actions/setup-python@v4
+      with:
+        python-version: ${{ env.PYTHON_VERSION }}
+
+    # 步骤3：安装系统依赖（如果需要编译Python包）
+    - name: Install system dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y libpq-dev python3-dev
+
+    # 步骤4：安装Python依赖
+    - name: Install Python dependencies
+      run: |
+        python -m pip install --upgrade pip
+        # 安装项目依赖
+        pip install -r requirements.txt
+        # 安装测试需要的额外包
+        pip install coverage pytest pytest-django pytest-cov uwsgi
+
+    # 步骤5：应用数据库迁移
+    - name: Run database migrations
+      run: python manage.py migrate
+      env:
+        # 设置Django需要的环境变量
+        DJANGO_SETTINGS_MODULE: core.settings
+        DEBUG: 'False'
+        SECRET_KEY: 'dummy-secret-key-for-testing'
+
+    # 步骤6：运行测试并生成覆盖率报告
+    - name: Run tests with coverage
+      run: |
+        # 运行测试并收集覆盖率数据
+        coverage run --source='.' manage.py test
+        # 生成覆盖率报告
+        coverage report
+        # 生成HTML格式的覆盖率报告（可选）
+        coverage html
+      env:
+        DJANGO_SETTINGS_MODULE: core.settings
+        DEBUG: 'False'
+        SECRET_KEY: 'dummy-secret-key-for-testing'
+
+    # 步骤7：运行代码质量检查
+    - name: Code quality checks
+      run: |
+        # 安装代码质量工具
+        pip install flake8 black isort
+        # 检查代码风格（Flake8）
+        echo "Running flake8..."
+        flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
+        # 检查代码格式（Black）
+        echo "Running black..."
+        black . --check
+        # 检查导入排序（isort）
+        echo "Running isort..."
+        isort . --check-only
+
+    # 步骤8：上传测试覆盖率报告（可选）
+    - name: Upload coverage reports
+      uses: codecov/codecov-action@v3
+      with:
+        file: ./coverage.xml
+        flags: unittests
+
+#  # 第二个任务：构建和部署（只有在测试通过且是main分支时才运行）
+#  deploy:
+#    # 任务名称：部署到生产环境
+#    name: Deploy to Production
+#
+#    # 运行环境
+#    runs-on: ubuntu-latest
+#
+#    # 这个任务依赖于test任务，只有test任务成功才会运行
+#    needs: test
+#
+#    # 只有在推送到main分支时才运行部署
+#    if: github.ref == 'refs/heads/main'
+#
+#    steps:
+#    # 步骤1：检出代码
+#    - name: Checkout code
+#      uses: actions/checkout@v4
+#
+#    # 步骤2：设置Docker构建环境
+#    - name: Set up Docker Buildx
+#      uses: docker/setup-buildx-action@v2
+#
+#    # 步骤3：登录到Docker Hub（如果你使用Docker Hub）
+#    - name: Login to Docker Hub
+#      uses: docker/login-action@v2
+#      with:
+#        username: ${{ secrets.DOCKERHUB_USERNAME }}
+#        password: ${{ secrets.DOCKERHUB_TOKEN }}
+#
+#    # 步骤4：构建和推送Docker镜像
+#    - name: Build and push Docker images
+#      uses: docker/build-push-action@v4
+#      with:
+#        context: .
+#        push: true
+#        tags: |
+#          ${{ secrets.DOCKERHUB_USERNAME }}/crypto-dashboard:latest
+#          ${{ secrets.DOCKERHUB_USERNAME }}/crypto-dashboard:${{ github.sha }}
+
+#    # 步骤5：部署到服务器（通过SSH）
+#    - name: Deploy to server
+#      uses: appleboy/ssh-action@master
+#      with:
+#        # 从GitHub Secrets中获取服务器信息
+#        host: ${{ secrets.SERVER_HOST }}
+#        username: ${{ secrets.SERVER_USER }}
+#        key: ${{ secrets.SSH_PRIVATE_KEY }}
+#        # 在服务器上执行的命令
+#        script: |
+#          echo "开始部署加密货币仪表板..."
+#
+#          # 进入项目目录
+#          cd /path/to/your/crypto-dashboard
+#
+#          # 拉取最新的Docker镜像
+#          docker pull ${{ secrets.DOCKERHUB_USERNAME }}/crypto-dashboard:latest
+#
+#          # 停止并删除旧容器
+#          docker-compose down
+#
+#          # 启动新容器
+#          docker-compose up -d
+#
+#          # 执行数据库迁移
+#          docker-compose exec web python manage.py migrate
+#
+#          # 收集静态文件
+#          docker-compose exec web python manage.py collectstatic --noinput
+#
+#          echo "部署完成！"    # 步骤5：部署到服务器（通过SSH）
+#    - name: Deploy to server
+#      uses: appleboy/ssh-action@master
+#      with:
+#        # 从GitHub Secrets中获取服务器信息
+#        host: ${{ secrets.SERVER_HOST }}
+#        username: ${{ secrets.SERVER_USER }}
+#        key: ${{ secrets.SSH_PRIVATE_KEY }}
+#        # 在服务器上执行的命令
+#        script: |
+#          echo "开始部署加密货币仪表板..."
+#
+#          # 进入项目目录
+#          cd /path/to/your/crypto-dashboard
+#
+#          # 拉取最新的Docker镜像
+#          docker pull ${{ secrets.DOCKERHUB_USERNAME }}/crypto-dashboard:latest
+#
+#          # 停止并删除旧容器
+#          docker-compose down
+#
+#          # 启动新容器
+#          docker-compose up -d
+#
+#          # 执行数据库迁移
+#          docker-compose exec web python manage.py migrate
+#
+#          # 收集静态文件
+#          docker-compose exec web python manage.py collectstatic --noinput
+#
+#          echo "部署完成！"
