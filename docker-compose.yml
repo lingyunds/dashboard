@@ -1,4 +1,4 @@
-version: '3.10.18'
+version: '3.12.0'
 
 # 定义将被多个服务使用的通用环境变量
 x-common-environment: &common-environment
