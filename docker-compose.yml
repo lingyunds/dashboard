@@ -28,8 +28,8 @@ services:
     image: lingjy/crypto-dashboard:latest
     container_name: crypto_web
     # 从上面定义的通用环境变量继承
-#    environment:
-#      <<: *common-environment
+    environment:
+      <<: *common-environment
     # 依赖关系：确保redis先启动
     depends_on:
       - redis
@@ -53,6 +53,8 @@ services:
   celery_worker:
     image: lingjy/crypto-dashboard:latest
     container_name: crypto_celery_worker
+    environment:
+      <<: *common-environment
     depends_on:
       - redis
       - web # 确保Web服务先启动，因为Worker可能需要访问模型等
@@ -70,6 +72,8 @@ services:
   celery_beat:
     image: lingjy/crypto-dashboard:latest
     container_name: crypto_celery_beat
+    environment:
+      <<: *common-environment
     depends_on:
       - redis
       - web
