@@ -171,15 +171,15 @@ jobs:
 
           echo "部署完成！"    # 步骤5：部署到服务器（通过SSH）
 
-# 在工作流末尾添加通知
-- name: Notify on success
-  if: success()
-  uses: actions/github-script@v6
-  with:
-    script: |
-      github.rest.issues.createComment({
-        issue_number: context.issue.number,
-        owner: context.repo.owner,
-        repo: context.repo.repo,
-        body: '🎉 部署成功！新版本已上线。'
-      })
+    # 在工作流末尾添加通知
+    - name: Notify on success
+      if: success()
+      uses: actions/github-script@v6
+      with:
+        script: |
+          github.rest.issues.createComment({
+            issue_number: context.issue.number,
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            body: '🎉 部署成功！新版本已上线。'
+          })
