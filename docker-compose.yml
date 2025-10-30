@@ -36,7 +36,7 @@ services:
     # 挂载卷：将本地代码目录挂载到容器，实现代码变更的热重载（便于开发）
     volumes:
       # 挂载配置文件
-      - ./config/settings.py:/var/www/html/dashboard/core/settings.py
+      - ./core/settings.py:/var/www/html/dashboard/core/settings.py
       # 挂载静态文件目录
       - ./static:/var/www/html/dashboard/static
       # 挂载日志目录
@@ -58,7 +58,7 @@ services:
       - web # 确保Web服务先启动，因为Worker可能需要访问模型等
     volumes:
       # 挂载配置文件
-      - ./config/settings.py:/var/www/html/dashboard/core/settings.py
+      - ./core/settings.py:/var/www/html/dashboard/core/settings.py
       # 挂载日志目录
       - ./logs:/var/www/html/dashboard/logs
     # 启动命令：启动Celery Worker
@@ -75,7 +75,7 @@ services:
       - web
     volumes:
       # 挂载配置文件
-      - ./config/settings.py:/var/www/html/dashboard/core/settings.py
+      - ./core/settings.py:/var/www/html/dashboard/core/settings.py
       # 挂载日志目录
       - ./logs:/var/www/html/dashboard/logs
     # 启动命令：启动Celery Beat
