@@ -1,0 +1,14 @@
+.git
+.gitignore
+*.pyc
+__pycache__
+*.poetry.lock
+*.sqlite3
+.DS_Store
+.env
+.vscode
+.idea
+htmlcov
+.coverage
+*.log
+docker-compose.override.yml

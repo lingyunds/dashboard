@@ -1,0 +1,90 @@
+version: '3.10.18'
+
+# 定义将被多个服务使用的通用环境变量
+x-common-environment: &common-environment
+  # Django设置模块
+  DJANGO_SETTINGS_MODULE: core.settings
+  # Celery Broker URL，指向我们下面定义的redis服务
+  CELERY_BROKER_URL: redis://redis:6379/0
+  # Celery Result Backend
+  CELERY_RESULT_BACKEND: redis://redis:6379/0
+
+services:
+  # Redis服务，作为Celery的Broker和Result Backend
+  redis:
+    image: redis:7-alpine
+    container_name: crypto_redis
+    # 将Redis数据持久化到主机上的卷，防止容器重启后数据丢失
+    volumes:
+      - redis_data:/data
+    ports:
+      - "6379:6379"
+    networks:
+      - crypto_network
+
+  # Django Web应用服务
+  web:
+#    build: .
+    build:
+      context: .
+      args:
+        - ENVIRONMENT=production
+    container_name: crypto_web
+    # 从上面定义的通用环境变量继承
+    environment:
+      <<: *common-environment
+    # 依赖关系：确保redis先启动
+    depends_on:
+      - redis
+    # 挂载卷：将本地代码目录挂载到容器，实现代码变更的热重载（便于开发）
+    volumes:
+      - .:/var/www/html/dashboard
+    # 暴露端口：主机端口8000映射到容器端口8000
+    ports:
+      - "8888:8888"
+    # 启动命令：运行Django开发服务器
+    command: sh start.sh
+    networks:
+      - crypto_network
+
+  # Celery Worker服务，处理异步任务
+  celery_worker:
+    build: .
+    container_name: crypto_celery_worker
+    environment:
+      <<: *common-environment
+    depends_on:
+      - redis
+      - web # 确保Web服务先启动，因为Worker可能需要访问模型等
+    volumes:
+      - .:/var/www/html/dashboard
+    # 启动命令：启动Celery Worker
+    command: celery -A core worker --loglevel=info
+    networks:
+      - crypto_network
+
+  # Celery Beat服务，调度定时任务
+  celery_beat:
+    build: .
+    container_name: crypto_celery_beat
+    environment:
+      <<: *common-environment
+    depends_on:
+      - redis
+      - web
+    volumes:
+      - .:/var/www/html/dashboard
+    # 启动命令：启动Celery Beat
+    command: celery -A core beat --loglevel=info
+    networks:
+      - crypto_network
+
+
+# 定义命名卷，用于持久化数据
+volumes:
+  redis_data:
+
+# 定义网络，让所有服务可以在同一个网络内通过服务名通信
+networks:
+  crypto_network:
+    driver: bridge
