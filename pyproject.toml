@@ -46,6 +46,7 @@ exclude = '''
   | .venv
   | build
   | dist
+  | migrations
 )/
 '''  # 排除不需要格式化的目录
 
