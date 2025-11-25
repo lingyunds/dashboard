@@ -6,7 +6,7 @@ authors = [
     {name = "ling",email = "200826704@qq.com"}
 ]
 readme = "README.md"
-requires-python = ">=3.12"
+requires-python = ">=3.12,<4.0"
 dependencies = [
     "django (>=5.2.7,<6.0.0)",
     "djangorestframework (>=3.16.1,<4.0.0)",
@@ -19,7 +19,8 @@ dependencies = [
     "pymysql (>=1.1.2,<2.0.0)",
     "cryptography (>=46.0.3,<47.0.0)",
     "eventlet (>=0.40.3,<0.41.0)",
-    "django-redis (>=6.0.0,<7.0.0)"
+    "django-redis (>=6.0.0,<7.0.0)",
+    "django-environ (>=0.12.0,<0.13.0)"
 ]
 
 

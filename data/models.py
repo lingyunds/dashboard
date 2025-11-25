@@ -7,6 +7,9 @@ from django.db import models
 class CryptoCurrency(models.Model):
     name = models.CharField(max_length=100)  # e.g., Bitcion
     symbol = models.CharField(max_length=10, unique=True)  # e.g., BTC
+    is_active = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
 
     def __str__(self) -> str:
         return f"{self.name} ({self.symbol})"

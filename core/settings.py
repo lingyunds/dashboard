@@ -14,23 +14,29 @@ import os
 import sys
 from pathlib import Path
 
+import environ
+
 # 如果你想使用 crontab 格式，需要导入：
 from celery.schedules import crontab
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
+# 读取配置文件
+env = environ.Env()
+env.read_env(env_file=os.path.join(BASE_DIR, ".env"))
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = "django-insecure-)e!mj^8__!^1+%py0pl&5pb1d4ml(zce+d9cz71q_$tfy-98m2"
+SECRET_KEY = env("SECRET_KEY", default=["xxxxx"])
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = False
 
-ALLOWED_HOSTS = ["*"]
+ALLOWED_HOSTS = env.list("ALLOWED_HOSTS")
+
 
 # 允许所有客户端跨域
 CORS_ORIGIN_ALLOW_ALL = True
@@ -58,6 +64,7 @@ MIDDLEWARE = [
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
+    # "core.middleware.PerformanceMiddleware",  # 性能监控
 ]
 
 ROOT_URLCONF = "core.urls"
@@ -86,12 +93,18 @@ WSGI_APPLICATION = "core.wsgi.application"
 DATABASES = {
     "default": {
         "ENGINE": "django.db.backends.mysql",
-        "NAME": "dashboard",  # 数据库名
-        "USER": "dashboard",  # 你设置的用户名 - 非root用户
-        "PASSWORD": "zXBD6nWb5an8LCyK",  # # 换成你自己密码
-        "HOST": "172.19.63.118",
-        "PORT": "3306",  # 端口
+        "NAME": env("DB_NAME"),
+        "USER": env("DB_USER"),
+        "PASSWORD": env("DB_PASSWORD"),
+        "HOST": env("DB_HOST"),
+        "PORT": env("DB_PORT"),
         "ATOMIC_REQUESTS": True,  # 事务
+        "OPTIONS": {
+            "charset": "utf8mb4",
+            "init_command": "SET sql_mode='STRICT_TRANS_TABLES'",
+            "connect_timeout": 10,
+        },
+        "CONN_MAX_AGE": 300,  # 连接池
     }
 }
 
@@ -153,8 +166,8 @@ DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 
 # Celery Configuration
-CELERY_BROKER_URL = os.environ.get("CELERY_BROKER_URL", "redis://@localhost:6379/0")
-CELERY_RESULT_BACKEND = os.environ.get("CELERY_RESULT_BACKEND", "redis://@localhost:6379/0")
+CELERY_BROKER_URL = env("CELERY_BROKER_URL")
+CELERY_RESULT_BACKEND = env("CELERY_RESULT_BACKEND")
 CELERY_ACCEPT_CONTENT = ["json"]
 CELERY_TASK_SERIALIZER = "json"
 CELERY_RESULT_SERIALIZER = "json"
@@ -176,7 +189,7 @@ CELERY_BEAT_SCHEDULE = {
 CACHES = {
     "default": {
         "BACKEND": "django_redis.cache.RedisCache",
-        "LOCATION": os.environ.get("REDIS_URL", "redis://@127.0.0.1:6379/1"),
+        "LOCATION": env("REDIS_URL"),
         "OPTIONS": {
             "CLIENT_CLASS": "django_redis.client.DefaultClient",
             "CONNECTION_POOL_KWARGS": {
@@ -195,7 +208,7 @@ SESSION_CACHE_ALIAS = "default"
 
 def is_testing():
     """更准确地检测测试环境"""
-    return "test" in sys.argv or "pytest" in sys.argv[0] or "PYTEST_CURRENT_TEST" in os.environ
+    return "test" in sys.argv or "pytest" in sys.argv[0] or "PYTEST_CURRENT_TEST" in env
 
 
 # 测试环境配置
